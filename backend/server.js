@@ -1,8 +1,8 @@
-// server.js - Main Express Server Entry Point
+// server.js - Production Ready (Docker + Nginx)
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const connectDB = require('./config/db');
 
 // Connect to MongoDB
@@ -11,15 +11,15 @@ connectDB();
 const app = express();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
+
+// Allow all origins (you can restrict later)
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5500', 'http://127.0.0.1:5500'],
-  credentials: true
+origin: '*',
+credentials: true
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -31,23 +31,28 @@ app.use('/api/payment', require('./routes/paymentRoutes'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'TechSphere API is running', timestamp: new Date().toISOString() });
+res.json({
+status: 'OK',
+message: 'TechSphere API is running',
+timestamp: new Date().toISOString()
+});
 });
 
-// Serve frontend for all other routes (SPA support)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+// Root route (no frontend crash)
+app.get('/', (req, res) => {
+res.send('TechSphere API is running 🚀');
 });
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('Unhandled Error:', err.stack);
-  res.status(500).json({ success: false, message: 'Internal server error' });
+console.error('Unhandled Error:', err.stack);
+res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
+// ─── Server Start ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`\n🚀 TechSphere Server running on http://localhost:${PORT}`);
-  console.log(`📦 API Endpoints: http://localhost:${PORT}/api`);
-  console.log(`🌐 Frontend: http://localhost:${PORT}\n`);
+console.log(`\n🚀 TechSphere Server running on port ${PORT}`);
+console.log(`📦 API: /api`);
 });
